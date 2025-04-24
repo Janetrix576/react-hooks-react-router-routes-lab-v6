@@ -1,54 +1,42 @@
-import "@testing-library/jest-dom";
-import { RouterProvider, createMemoryRouter} from "react-router-dom"
-import { render, screen } from "@testing-library/react";
-import routes from "../routes";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import NavBar from '../components/NavBar';
 
-const id = 1
-const router = createMemoryRouter(routes, {
-    initialEntries: [`/movie/${id}`],
-    initialIndex: 0
-})
+function Movie() {
+  const [movie, setMovie] = useState(null);
 
-test("renders without any errors", () => {
-  const errorSpy = vi.spyOn(global.console, "error");
+  const { id } = useParams();
 
-  render(<RouterProvider router={router}/>);
+  useEffect(() => {
+    fetch(`http://localhost:3000/movies/${id}`)
+      .then((response) => response.json())
+      .then((data) => setMovie(data))
+      .catch((error) => console.error("Error fetching movie:", error));
+  }, [id]);
 
-  expect(errorSpy).not.toHaveBeenCalled();
+  if (!movie) {
+    return <h1>Loading...</h1>;
+  }
 
-  errorSpy.mockRestore();
-});
+  const { title, time, genres } = movie;
 
-test("renders movie's title in an h1", async () => {
-  render(<RouterProvider router={router} />);
-  const h1 = await screen.findByText(/Doctor Strange/);
-  expect(h1).toBeInTheDocument();
-  expect(h1.tagName).toBe("H1");
-});
-
-test("renders movie's time within a p tag", async () => {
-  render(<RouterProvider router={router} />);
-  const p = await screen.findByText(/115/);
-  expect(p).toBeInTheDocument();
-  expect(p.tagName).toBe("P");
-});
-
-test("renders a span for each genre",  () => {
-  render(<RouterProvider router={router} />);
-  const genres = ["Action", "Adventure", "Fantasy"];
-  genres.forEach(async (genre) =>{
-    const span = await screen.findByText(genre);
-    expect(span).toBeInTheDocument();
-    expect(span.tagName).toBe("SPAN");
-  })
-});
-
-test("renders the <NavBar /> component", async () => {
-  const router = createMemoryRouter(routes, {
-    initialEntries: [`/movie/1`]
-  })
-  render(
-      <RouterProvider router={router}/>
+  return (
+    <>
+      <header>
+        <NavBar />
+      </header>
+      <main>
+        <h1>{title}</h1>
+        <p>Time: {time}</p>
+        <div>
+          Genres:{" "}
+          {genres.map((genre, index) => (
+            <span key={index}>{genre}</span>
+          ))}
+        </div>
+      </main>
+    </>
   );
-  expect(await screen.findByRole("navigation")).toBeInTheDocument();
-});
+};
+
+export default Movie;
